@@ -3,6 +3,7 @@ import {
   generateAccessToken,
   generateRefreshToken,
 } from "../lib/utils/tokenUtils.js";
+import cloudinary from "../lib/utils/cloudinary.js";
 
 export const signUp = async (req, res, next) => {
   try {
@@ -75,6 +76,37 @@ export const logout = async (req, res, next) => {
       sameSite: "strict",
     });
     res.status(200).json({ success: true, message: "Logged out successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateProfile = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { profilePic, bio, fullName } = req.body;
+    let updatedUser;
+
+    if (!profilePic) {
+      updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { bio, fullName },
+        { new: true }
+      );
+    } else {
+      const upload = await cloudinary.uploader.upload(profilePic);
+      updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { profilePic: upload.secure_url, bio, fullName },
+        { new: true }
+      );
+    }
+
+    return res.status(200).json({
+      success: true,
+      user: updatedUser,
+      message: "User profile updated",
+    });
   } catch (error) {
     next(error);
   }

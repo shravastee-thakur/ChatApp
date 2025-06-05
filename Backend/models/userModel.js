@@ -21,6 +21,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    refreshToken: {
+      type: String,
+      select: false,
+    },
     bio: {
       type: String,
     },
