@@ -5,7 +5,7 @@ import { io, userSocketMap } from "../index.js";
 
 export const getUsersForSidebar = async (req, res, next) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
     const filteredUsers = await User.find({ _id: { $ne: userId } }).select(
       "-password"
     );
@@ -35,7 +35,7 @@ export const getUsersForSidebar = async (req, res, next) => {
 export const getMessages = async (req, res, next) => {
   try {
     const selectedUserId = req.params.id;
-    const myId = req.user.id;
+    const myId = req.user._id;
 
     const messages = await Message.find({
       $or: [
@@ -70,7 +70,7 @@ export const sendMessage = async (req, res, next) => {
   try {
     const { text, image } = req.body;
     const receiverId = req.params.id;
-    const senderId = req.user.id;
+    const senderId = req.user._id;
 
     let imageUrl;
     if (image) {

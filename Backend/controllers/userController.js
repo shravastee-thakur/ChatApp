@@ -1,8 +1,5 @@
 import User from "../models/userModel.js";
-import {
-  generateAccessToken,
-  generateRefreshToken,
-} from "../lib/utils/tokenUtils.js";
+import { generateToken } from "../lib/utils/tokenUtils.js";
 import cloudinary from "../lib/utils/cloudinary.js";
 
 export const signUp = async (req, res, next) => {
@@ -24,9 +21,12 @@ export const signUp = async (req, res, next) => {
       bio,
     });
 
+    const token = generateToken(user._id);
+
     return res.status(200).json({
       success: true,
       data: user,
+      token,
       message: "User created successfully",
     });
   } catch (error) {
@@ -40,50 +40,48 @@ export const login = async (req, res, next) => {
 
     const user = await User.login(email, password);
 
-    const newAccessToken = generateAccessToken(user);
-    const newRefreshToken = generateRefreshToken(user);
-
-    user.refreshToken = newRefreshToken;
-    await user.save();
+    const token = generateToken(user._id);
 
     return res
       .status(200)
-      .cookie("refreshToken", newRefreshToken, {
-        httpOnly: true,
-        sameSite: "strict",
-        secure: true,
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      })
-      .json({ success: true, accessToken: newAccessToken, id: user._id });
+      .json({ success: true, token, user, message: "Login successfull" });
   } catch (error) {
     next(error);
   }
 };
 
-export const logout = async (req, res, next) => {
+export const chechAuth = async (req, res, next) => {
   try {
-    const token = req.cookies.refreshToken;
-    if (!token) return res.sendStatus(204);
-
-    const user = await User.findOne({ refreshToken: token });
-    if (user) {
-      (user.refreshToken = ""), await user.save();
-    }
-
-    res.clearCookie("refreshToken", {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
-    });
-    res.status(200).json({ success: true, message: "Logged out successfully" });
+    return res.status(200).json({ success: true, user: req.user });
   } catch (error) {
     next(error);
   }
 };
+
+// export const logout = async (req, res, next) => {
+//   try {
+//     const token = req.cookies.refreshToken;
+//     if (!token) return res.sendStatus(204);
+
+//     const user = await User.findOne({ refreshToken: token });
+//     if (user) {
+//       (user.refreshToken = ""), await user.save();
+//     }
+
+//     res.clearCookie("refreshToken", {
+//       httpOnly: true,
+//       secure: true,
+//       sameSite: "strict",
+//     });
+//     res.status(200).json({ success: true, message: "Logged out successfully" });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
 export const updateProfile = async (req, res, next) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
     const { profilePic, bio, fullName } = req.body;
     let updatedUser;
 
